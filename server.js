@@ -24,6 +24,20 @@ const readData = (filePath) => {
     }
 };
 
+// ✅ Получение одного теста по ID (улучшено)
+app.get('/api/tests/:id', (req, res) => {
+  const testId = Number(req.params.id); // Числовое приведение
+
+  const tests = readData(filePathTests);
+  const test = tests.find((t) => t.id === testId);
+
+  if (!test) {
+      return res.status(404).json({ error: 'Тест не найден' });
+  }
+
+  res.json(test);
+});
+
 // Функция безопасной записи JSON
 const writeData = (data, filePath) => {
     try {
