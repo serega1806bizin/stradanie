@@ -24,52 +24,38 @@ const readData = (filePath) => {
     }
 };
 
+// ✅ Отправка ответа
 app.post('/submit', (req, res) => {
   const answerData = req.body;
 
-  // Сохранение ответа в answers.json
-  fs.readFile('answers.json', 'utf8', (err, data) => {
-    const answers = err && err.code === 'ENOENT' ? [] : JSON.parse(data || '[]');
-    answers.push(answerData);
+  // Читаем текущие ответы
+  const answers = readData(filePathAnswers);
+  answers.push(answerData);
+  writeData(answers, filePathAnswers);
 
-    fs.writeFile('answers.json', JSON.stringify(answers, null, 2), (writeErr) => {
-      if (writeErr) {
-        console.error('Ошибка записи в файл ответов:', writeErr);
-        return res.status(500).send('Ошибка записи в файл ответов');
-      }
-    });
+  // Обновляем прогресс в tests.json
+  const tests = readData(filePathTests);
+  const testIndex = tests.findIndex((t) => t.id === answerData["id-test"]);
+
+  if (testIndex === -1) {
+    return res.status(404).json({ error: "Тест не найден" });
+  }
+
+  // Увеличиваем progress
+  tests[testIndex].progress = (tests[testIndex].progress || 0) + 1;
+  writeData(tests, filePathTests);
+
+  res.status(200).json({
+    message: "Прогресс обновлён и данные успешно сохранены!",
+    updatedTest: tests[testIndex],
   });
+});
 
-  // Обновление прогресса в TESTS.json
-  fs.readFile(filePathTests, 'utf8', (err, data) => {
-    if (err) {
-      console.error('Ошибка чтения файла тестов:', err);
-      return res.status(500).send('Ошибка чтения файла тестов');
-    }
 
-    const tests = JSON.parse(data || '[]');
-    const testIndex = tests.findIndex((t) => t.id === answerData['id-test']); // Найти тест по ID
-
-    if (testIndex === -1) {
-      return res.status(404).send('Тест не найден');
-    }
-
-    // Увеличение значения progress
-    tests[testIndex].progress = (tests[testIndex].progress || 0) + 1;
-
-    // Запись изменений обратно в файл
-    fs.writeFile(filePathTests, JSON.stringify(tests, null, 2), (writeErr) => {
-      if (writeErr) {
-        console.error('Ошибка записи в файл тестов:', writeErr);
-        return res.status(500).send('Ошибка записи в файл тестов');
-      }
-
-      res.status(200).json({
-        message: 'Прогресс обновлён и данные успешно сохранены!',
-        updatedTest: tests[testIndex],
-      });
-    });
-  });
+// ✅ Получение всех ответов
+app.get('/api/answers', (req, res) => {
+  const answers = readData(filePathAnswers);
+  res.json(answers);
 });
 
 // ✅ Получение одного теста по ID (улучшено)
