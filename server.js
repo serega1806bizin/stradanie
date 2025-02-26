@@ -4,7 +4,8 @@ import cors from 'cors';
 import path from 'path';
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 8080;
+
 const filePathTests = path.resolve('tests.json'); // Абсолютный путь
 const filePathAnswers = path.resolve('answers.json'); // Абсолютный путь
 
