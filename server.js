@@ -202,11 +202,6 @@ const readData = (filePath) => {
 app.post('/submit', (req, res) => {
   const answerData = req.body;
 
-  // Сохранение полученного ответа
-  const answers = readData(filePathAnswers);
-  answers.push(answerData);
-  writeData(answers, filePathAnswers);
-
   // Обновляем прогресс в tests.json
   const tests = readData(filePathTests);
   const testIndex = tests.findIndex(t => t.id === answerData["id-test"]);
@@ -218,10 +213,16 @@ app.post('/submit', (req, res) => {
   // Вычисляем оценку на основании ответов студента
   const gradingResult = calculateScore(answerData, tests[testIndex]);
 
-  // Можно сохранить результаты проверки вместе с прогрессом
-  tests[testIndex].progress = (tests[testIndex].progress || 0) + 1;
-  tests[testIndex].lastGrading = gradingResult; // сохраняем детальную проверку
+  // Добавляем новое поле в объект ответа
+  answerData.lastGrading = gradingResult;
 
+  // Сохраняем ответ с новым полем
+  const answers = readData(filePathAnswers);
+  answers.push(answerData);
+  writeData(answers, filePathAnswers);
+
+  // Обновляем тест (например, прогресс)
+  tests[testIndex].progress = (tests[testIndex].progress || 0) + 1;
   writeData(tests, filePathTests);
 
   res.status(200).json({
@@ -230,6 +231,7 @@ app.post('/submit', (req, res) => {
     gradingResult
   });
 });
+
 
 
 
