@@ -273,7 +273,7 @@ app.get('/api/tests', (req, res) => {
 
 // ✅ Добавление нового теста
 app.post('/api/tests', (req, res) => {
-    const data = readData();
+    const data = readData(filePathTests);
     const newTest = { id: Date.now(), ...req.body };
 
     data.push(newTest);
