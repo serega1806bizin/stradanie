@@ -48,7 +48,6 @@ app.post('/submit', (req, res) => {
   res.status(200).json({
     message: "Прогресс обновлён, данные успешно сохранены, и оценка рассчитана!",
     updatedTest: tests[testIndex],
-    gradingResult
   });
 });
 
