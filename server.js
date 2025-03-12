@@ -60,6 +60,23 @@ app.get('/api/answers', (req, res) => {
   res.json(answers);
 });
 
+// ✅ Получение ответов по ID теста
+app.get('/api/answers/:idTest', (req, res) => {
+    const idTest = Number(req.params.idTest); // Приведение к числу
+    const answers = readData(filePathAnswers);
+
+    // Фильтруем только те ответы, у которых совпадает id-test
+    const filteredAnswers = answers.filter(answer => answer["id-test"] === idTest);
+
+    if (filteredAnswers.length === 0) {
+        return res.status(404).json({ error: 'Ответы для данного теста не найдены' });
+    }
+
+    res.json(filteredAnswers);
+});
+
+
+
 // ✅ Получение одного теста по ID (улучшено)
 app.get('/api/tests/:id', (req, res) => {
   const testId = Number(req.params.id); // Числовое приведение
