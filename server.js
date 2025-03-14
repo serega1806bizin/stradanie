@@ -208,20 +208,34 @@ app.post('/api/tests', (req, res) => {
     res.status(201).json(newTest);
 });
 
-// ✅ Удаление теста по id
+// ✅ Удаление теста по id и связанных ответов
 app.delete('/api/tests/:id', (req, res) => {
     const { id } = req.params;
-    let data = readData(filePathTests);
+    const testId = Number(id);
 
-    const newData = data.filter(test => test.id !== Number(id));
+    // Читаем текущие тесты
+    let tests = readData(filePathTests);
+    const newTests = tests.filter(test => test.id !== testId);
 
-    if (data.length === newData.length) {
+    if (tests.length === newTests.length) {
         return res.status(404).json({ error: 'Тест не найден' });
     }
 
-    writeData(newData, filePathTests);
-    res.json({ message: 'Тест удален' });
+    // Обновляем тесты
+    writeData(newTests, filePathTests);
+
+    // Читаем текущие ответы
+    let answers = readData(filePathAnswers);
+    const newAnswers = answers.filter(answer => answer["id-test"] !== testId);
+
+    // Если были удалены ответы, обновляем файл
+    if (answers.length !== newAnswers.length) {
+        writeData(newAnswers, filePathAnswers);
+    }
+
+    res.json({ message: 'Тест и связанные ответы удалены' });
 });
+
 
 // Запуск сервера
 app.listen(PORT, () => {
