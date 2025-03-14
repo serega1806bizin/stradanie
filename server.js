@@ -29,23 +29,13 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
-    // Получаем questionId из тела запроса
-    const questionId = req.body.questionId;
-    if (!questionId) {
-      return cb(new Error('questionId не передан в теле запроса'));
-    }
-    // Если индекс файлов ещё не установлен, начинаем с 1
-    if (!req.fileIndex) {
-      req.fileIndex = 1;
-    } else {
-      req.fileIndex++;
-    }
-    const ext = path.extname(file.originalname); // Получаем расширение файла (.png, .jpeg и т.д.)
-    const fileName = `${questionId}-${req.fileIndex}${ext}`;
-    cb(null, fileName);
-  },
+ filename: (req, file, cb) => {
+  const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+  cb(null, uniqueSuffix + '-' + file.originalname);
+},
+
 });
+
 const upload = multer({ storage });
 
 // Новый эндпоинт для загрузки изображений
