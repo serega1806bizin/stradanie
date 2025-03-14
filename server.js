@@ -2,6 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import cors from 'cors';
 import path from 'path';
+import multer from 'multer';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -11,6 +12,56 @@ const filePathAnswers = path.resolve('answers.json'); // Абсолютный п
 
 app.use(cors());
 app.use(express.json());
+
+// Определяем __dirname для ES-модулей
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+// Настраиваем директорию для загрузок
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Отдаём статические файлы из директории uploads
+app.use('/uploads', express.static(uploadDir));
+
+// Настраиваем multer с переопределением имени файла
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Получаем questionId из тела запроса
+    const questionId = req.body.questionId;
+    if (!questionId) {
+      return cb(new Error('questionId не передан в теле запроса'));
+    }
+    // Если индекс файлов ещё не установлен, начинаем с 1
+    if (!req.fileIndex) {
+      req.fileIndex = 1;
+    } else {
+      req.fileIndex++;
+    }
+    const ext = path.extname(file.originalname); // Получаем расширение файла (.png, .jpeg и т.д.)
+    const fileName = `${questionId}-${req.fileIndex}${ext}`;
+    cb(null, fileName);
+  },
+});
+const upload = multer({ storage });
+
+// Новый эндпоинт для загрузки изображений
+// Ожидается, что в multipart/form-data переданы: 
+// - поле questionId (идентификатор вопроса)
+// - файлы в поле "images" (до 8 файлов)
+app.post('/upload', upload.array('images', 8), (req, res) => {
+  const files = req.files;
+  if (!files || files.length === 0) {
+    return res.status(400).send('Файлы не были загружены.');
+  }
+  // Формируем URL для каждого загруженного файла
+  const fileUrls = files.map(file => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
+  res.status(200).json({ urls: fileUrls });
+});
+
 
 const calculateScore = (test, studentAnswers) => {
   let totalScore = 0;
