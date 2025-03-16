@@ -138,10 +138,8 @@ const calculateScore = (test, studentAnswers) => {
           earnedPoints = maxPoints;
         }
         break;
-              case "list-reber": {
-        // Предположим, что question.answer — это массив правильных пар,
-        // а studentAnswer.answer — массив пар от студента.
-        // Если у вас другая структура, скорректируйте под неё.
+      case "list-reber": 
+
 
         const correctEdges = question.answer; // например: [[1,2],[2,3]] или [{x1:1,x2:2},{x1:2,x2:3}]
         const studentEdges = studentAnswer.answer || [];
@@ -158,7 +156,7 @@ const calculateScore = (test, studentAnswers) => {
         // Например, частичное количество баллов
         earnedPoints = (correctCount / correctEdges.length) * maxPoints;
         break;
-      }
+      
 
       default:
         console.warn(`⚠️ Неизвестный тип вопроса: ${question.type}`);
