@@ -243,7 +243,19 @@ app.post('/submit', (req, res) => {
 });
 
 
+// ✅ Получение ответа по id-answer
+app.get('/api/answers/answer/:idAnswer', (req, res) => {
+    const idAnswer = Number(req.params.idAnswer); // Приведение id к числу
+    const answers = readData(filePathAnswers);
 
+    const answer = answers.find(ans => ans["id-answer"] === idAnswer);
+
+    if (!answer) {
+        return res.status(404).json({ error: 'Ответ не найден' });
+    }
+
+    res.json(answer);
+});
 
 
 // ✅ Получение всех ответов
