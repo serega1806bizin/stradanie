@@ -151,6 +151,33 @@ const readData = (filePath) => {
     }
 };
 
+// ✅ Обновление теста по id
+app.put('/api/tests/:id', (req, res) => {
+  const testId = Number(req.params.id);
+  const tests = readData(filePathTests); // Считываем текущие тесты из файла
+
+  // Ищем индекс теста, который нужно обновить
+  const index = tests.findIndex(test => test.id === testId);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Тест не найден' });
+  }
+
+  // Обновляем поля теста из тела запроса
+  // Если нужно сохранить старые поля, которых нет в req.body, используем spread
+  tests[index] = {
+    ...tests[index],  // старые поля
+    ...req.body,      // новые/обновлённые поля
+    id: testId        // на всякий случай убеждаемся, что id остаётся прежним
+  };
+
+  // Сохраняем тесты обратно в файл
+  writeData(tests, filePathTests);
+
+  // Возвращаем обновлённый тест
+  res.json(tests[index]);
+});
+
+
 // ✅ Отправка ответа
 app.post('/submit', (req, res) => {
   const answerData = req.body;
