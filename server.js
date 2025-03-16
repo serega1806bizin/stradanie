@@ -154,27 +154,61 @@ const readData = (filePath) => {
 // ✅ Обновление теста по id
 app.put('/api/tests/:id', (req, res) => {
   const testId = Number(req.params.id);
-  const tests = readData(filePathTests); // Считываем текущие тесты из файла
-
-  // Ищем индекс теста, который нужно обновить
+  const tests = readData(filePathTests);
   const index = tests.findIndex(test => test.id === testId);
   if (index === -1) {
     return res.status(404).json({ error: 'Тест не найден' });
   }
 
-  // Обновляем поля теста из тела запроса
-  // Если нужно сохранить старые поля, которых нет в req.body, используем spread
-  tests[index] = {
-    ...tests[index],  // старые поля
-    ...req.body,      // новые/обновлённые поля
-    id: testId        // на всякий случай убеждаемся, что id остаётся прежним
+  const oldTest = tests[index];
+
+  // Создаем новую версию теста, объединяя старые данные с новыми из req.body
+  const newTest = {
+    ...oldTest,
+    ...req.body,
+    id: testId,
   };
 
-  // Сохраняем тесты обратно в файл
-  writeData(tests, filePathTests);
+  // Функция для сбора всех URL картинок из вопросов теста
+  const gatherAllImages = (testObj) => {
+    let urls = [];
+    if (testObj.questions && Array.isArray(testObj.questions)) {
+      testObj.questions.forEach(q => {
+        if (q.Images && Array.isArray(q.Images)) {
+          urls = urls.concat(q.Images);
+        }
+      });
+    }
+    return urls;
+  };
 
-  // Возвращаем обновлённый тест
-  res.json(tests[index]);
+  const oldImages = gatherAllImages(oldTest);
+  const newImages = gatherAllImages(newTest);
+
+  // Определяем удаленные URL (те, которые были, но отсутствуют в новой версии)
+  const removedImages = oldImages.filter(url => !newImages.includes(url));
+  console.log('Removed images:', removedImages);
+
+  // Удаляем файлы с диска
+  removedImages.forEach(url => {
+    try {
+      const fileName = path.basename(url);
+      const fullPath = path.join(uploadDir, fileName);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+        console.log(`Файл ${fileName} удалён`);
+      } else {
+        console.log(`Файл ${fileName} не найден`);
+      }
+    } catch (error) {
+      console.error('Ошибка при удалении файла:', error);
+    }
+  });
+
+  // Обновляем тесты и сохраняем
+  tests[index] = newTest;
+  writeData(tests, filePathTests);
+  res.json(newTest);
 });
 
 
