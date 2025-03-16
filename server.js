@@ -51,7 +51,19 @@ app.post('/upload', upload.array('images', 8), (req, res) => {
   const fileUrls = files.map(file => `${req.protocol}://${req.get('host')}/uploads/${file.filename}`);
   res.status(200).json({ urls: fileUrls });
 });
+// Вспомогательная функция сравнения двух пар (x1, x2) с игнорированием порядка
+function pairsEqual(pair1, pair2) {
+  // Предположим, что pair1 и pair2 — это [x1, x2] или {x1, x2}.
+  // Если у вас точно массивы, уберите проверку.
+  const [a1, a2] = Array.isArray(pair1) ? pair1 : [pair1.x1, pair1.x2];
+  const [b1, b2] = Array.isArray(pair2) ? pair2 : [pair2.x1, pair2.x2];
 
+  // Сравниваем как числа, игнорируя порядок
+  return (
+    (Number(a1) === Number(b1) && Number(a2) === Number(b2)) ||
+    (Number(a1) === Number(b2) && Number(a2) === Number(b1))
+  );
+}
 
 const calculateScore = (test, studentAnswers) => {
   let totalScore = 0;
@@ -126,6 +138,27 @@ const calculateScore = (test, studentAnswers) => {
           earnedPoints = maxPoints;
         }
         break;
+              case "list-reber": {
+        // Предположим, что question.answer — это массив правильных пар,
+        // а studentAnswer.answer — массив пар от студента.
+        // Если у вас другая структура, скорректируйте под неё.
+
+        const correctEdges = question.answer; // например: [[1,2],[2,3]] или [{x1:1,x2:2},{x1:2,x2:3}]
+        const studentEdges = studentAnswer.answer || [];
+
+        let correctCount = 0;
+        correctEdges.forEach(correctEdge => {
+          // Проверяем, есть ли совпадение среди ответов студента
+          const found = studentEdges.some(studentEdge =>
+            pairsEqual(correctEdge, studentEdge)
+          );
+          if (found) correctCount++;
+        });
+
+        // Например, частичное количество баллов
+        earnedPoints = (correctCount / correctEdges.length) * maxPoints;
+        break;
+      }
 
       default:
         console.warn(`⚠️ Неизвестный тип вопроса: ${question.type}`);
