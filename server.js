@@ -142,7 +142,7 @@ const calculateScore = (test, studentAnswers) => {
 
 
         const correctEdges = question.answer; // например: [[1,2],[2,3]] или [{x1:1,x2:2},{x1:2,x2:3}]
-        const studentEdges = studentAnswer.answer || [];
+        const studentEdges = studentAnswer.answer.answer || [];
 
         let correctCount = 0;
         correctEdges.forEach(correctEdge => {
