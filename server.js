@@ -156,7 +156,7 @@ const calculateScore = (test, studentAnswers) => {
         // Например, частичное количество баллов
         earnedPoints = (correctCount / correctEdges.length) * maxPoints;
         break;
-      
+
 
       default:
         console.warn(`⚠️ Неизвестный тип вопроса: ${question.type}`);
@@ -200,7 +200,7 @@ app.put('/api/tests/:id', (req, res) => {
     id: testId,
     lastUpdated: Date.now(), // позначаємо, коли тест востаннє редагувався
   };
-
+  
   // Функция для сбора всех URL картинок из вопросов теста
   const gatherAllImages = (testObj) => {
     let urls = [];
@@ -240,46 +240,14 @@ app.put('/api/tests/:id', (req, res) => {
   // Обновляем тесты и сохраняем
   tests[index] = newTest;
   writeData(tests, filePathTests);
-
-  // 🔁 Переперевірка відповідей студентів
-  let answers = readData(filePathAnswers);
-  let updated = false;
-
-  answers = answers.map(ans => {
-    if (ans["id-test"] === testId) {
-      // Перевірка: чи всі question-id ще існують
-      const allQuestionsStillExist = ans.answers.every(studentAns =>
-        newTest.questions.some(q => Number(q.id) === Number(studentAns["question-id"]))
-      );
-
-      if (!allQuestionsStillExist) {
-        console.warn(`⚠️ Пропущено оновлення відповіді ${ans["id-answer"]}, оскільки структура змінилася`);
-        return ans;
-      }
-
-      const newMark = calculateScore(newTest, ans);
-      if (ans.mark !== newMark) {
-        ans.mark = newMark;
-        updated = true;
-      }
-    }
-    return ans;
-  });
-
-  if (updated) {
-    writeData(answers, filePathAnswers);
-    console.log('✅ Всі відповіді переперевірені та оновлені');
-  }
-
   res.json(newTest);
 });
-
 
 
 // ✅ Отправка ответа
 app.post('/submit', (req, res) => {
   const answerData = req.body;
-  
+
   const tests = readData(filePathTests);
   const test = tests.find(t => t.id === answerData["id-test"]);
 
