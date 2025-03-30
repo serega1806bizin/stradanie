@@ -198,8 +198,9 @@ app.put('/api/tests/:id', (req, res) => {
     ...oldTest,
     ...req.body,
     id: testId,
+    lastUpdated: Date.now(), // позначаємо, коли тест востаннє редагувався
   };
-
+  
   // Функция для сбора всех URL картинок из вопросов теста
   const gatherAllImages = (testObj) => {
     let urls = [];
@@ -256,6 +257,7 @@ app.post('/submit', (req, res) => {
 
   // ✅ Расчет баллов на бэке
   answerData.mark = calculateScore(test, answerData);
+  answerData.timestamp = Date.now(); // Додаємо час створення відповіді
 
   const answers = readData(filePathAnswers);
   answers.push(answerData);
