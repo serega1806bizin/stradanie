@@ -357,30 +357,60 @@ app.post('/api/tests', (req, res) => {
 
 // ✅ Удаление теста по id и связанных ответов
 app.delete('/api/tests/:id', (req, res) => {
-    const { id } = req.params;
-    const testId = Number(id);
+  const { id } = req.params;
+  const testId = Number(id);
 
-    // Читаем текущие тесты
-    let tests = readData(filePathTests);
-    const newTests = tests.filter(test => test.id !== testId);
+  // Читаємо поточні тести
+  let tests = readData(filePathTests);
+  const testToDelete = tests.find(test => test.id === testId);
 
-    if (tests.length === newTests.length) {
-        return res.status(404).json({ error: 'Тест не найден' });
+  if (!testToDelete) {
+    return res.status(404).json({ error: 'Тест не знайдено' });
+  }
+
+  // 🖼️ Збираємо всі зображення, прикріплені до цього тесту
+  const gatherAllImages = (testObj) => {
+    let urls = [];
+    if (testObj.questions && Array.isArray(testObj.questions)) {
+      testObj.questions.forEach(q => {
+        if (q.Images && Array.isArray(q.Images)) {
+          urls = urls.concat(q.Images);
+        }
+      });
     }
+    return urls;
+  };
 
-    // Обновляем тесты
-    writeData(newTests, filePathTests);
+  const allImages = gatherAllImages(testToDelete);
 
-    // Читаем текущие ответы
-    let answers = readData(filePathAnswers);
-    const newAnswers = answers.filter(answer => answer["id-test"] !== testId);
-
-    // Если были удалены ответы, обновляем файл
-    if (answers.length !== newAnswers.length) {
-        writeData(newAnswers, filePathAnswers);
+  // 🧹 Видаляємо ці зображення з диску
+  allImages.forEach(url => {
+    try {
+      const fileName = path.basename(url);
+      const fullPath = path.join(uploadDir, fileName);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+        console.log(`🗑️ Видалено файл: ${fileName}`);
+      } else {
+        console.log(`⚠️ Файл ${fileName} не знайдено`);
+      }
+    } catch (error) {
+      console.error('❌ Помилка при видаленні зображення:', error);
     }
+  });
 
-    res.json({ message: 'Тест и связанные ответы удалены' });
+  // Оновлюємо список тестів
+  const newTests = tests.filter(test => test.id !== testId);
+  writeData(newTests, filePathTests);
+
+  // Видаляємо пов’язані відповіді
+  let answers = readData(filePathAnswers);
+  const newAnswers = answers.filter(answer => answer["id-test"] !== testId);
+  if (answers.length !== newAnswers.length) {
+    writeData(newAnswers, filePathAnswers);
+  }
+
+  res.json({ message: 'Тест, відповіді та зображення успішно видалено' });
 });
 
 
