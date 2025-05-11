@@ -67,62 +67,71 @@ function pairsEqual(pair1, pair2) {
 
 const calculateScore = (test, studentAnswers) => {
   let totalScore = 0;
+  const variant = Number(studentAnswers.variant);
 
-  console.log(`📌 Рассчитываем баллы для студента: ${studentAnswers.student}`);
-  console.log("🔍 Ответы студента:", studentAnswers.answers);
+  console.log(`📌 Розрахунок балів для: ${studentAnswers.student} (Варіант ${variant})`);
 
   test.questions.forEach(question => {
     const studentAnswer = studentAnswers.answers.find(ans => Number(ans["question-id"]) === Number(question.id));
-
     if (!studentAnswer) {
-      console.log(`🚫 Вопрос ${question.id} (${question.text}) - ❌ ответа нет!`);
+      console.log(`🚫 Питання ${question.id} (${question.text}) — ❌ відповіді немає`);
+      return;
+    }
+
+    const correctAnswer = question.answersByVariant?.[variant];
+    if (correctAnswer === undefined) {
+      console.log(`❌ Немає правильної відповіді для варіанту ${variant} у питанні ${question.id}`);
       return;
     }
 
     let earnedPoints = 0;
     const maxPoints = question.points;
 
-    console.log(`\n🔎 Проверяем вопрос: ${question.text} (Тип: ${question.type})`);
-    console.log(`✅ Правильный ответ:`, question.answer);
-    console.log(`📝 Ответ студента:`, studentAnswer.answer);
+    console.log(`\n🔍 Перевірка: ${question.text} (Тип: ${question.type})`);
+    console.log(`✅ Очікувана відповідь:`, correctAnswer);
+    console.log(`📝 Відповідь студента:`, studentAnswer.answer);
 
     switch (question.type) {
       case "text":
-        if (studentAnswer.answer.trim().toLowerCase() === question.answer.trim().toLowerCase()) {
+        if (
+          typeof studentAnswer.answer === "string" &&
+          typeof correctAnswer === "string" &&
+          studentAnswer.answer.trim().toLowerCase() === correctAnswer.trim().toLowerCase()
+        ) {
           earnedPoints = maxPoints;
         }
         break;
 
       case "number":
-        if (Number(studentAnswer.answer) === Number(question.answer)) {
+        if (Number(studentAnswer.answer) === Number(correctAnswer)) {
           earnedPoints = maxPoints;
         }
         break;
 
       case "list-num":
-        if (question.answer.consistencyImportant) {
+        if (correctAnswer.consistencyImportant) {
           let correctCount = 0;
-          question.answer.massiv.forEach((num, i) => {
+          correctAnswer.massiv.forEach((num, i) => {
             if (studentAnswer.answer[i] === num) correctCount++;
           });
-          earnedPoints = (correctCount / question.answer.massiv.length) * maxPoints;
+          earnedPoints = (correctCount / correctAnswer.massiv.length) * maxPoints;
         } else {
-          const correctSet = new Set(question.answer.massiv);
+          const correctSet = new Set(correctAnswer.massiv);
           const studentSet = new Set(studentAnswer.answer);
           const correctCount = [...studentSet].filter(num => correctSet.has(num)).length;
-          earnedPoints = (correctCount / question.answer.massiv.length) * maxPoints;
+          earnedPoints = (correctCount / correctAnswer.massiv.length) * maxPoints;
         }
         break;
 
       case "matrix":
-        const correctMatrix = JSON.stringify(question.answer);
+        const correctMatrix = JSON.stringify(correctAnswer);
         const studentMatrix = JSON.stringify(studentAnswer.answer.answer);
         if (correctMatrix === studentMatrix) {
           earnedPoints = maxPoints;
         } else {
           let correctCount = 0;
-          const totalElements = question.answer.flat().length;
-          question.answer.forEach((row, i) => {
+          const totalElements = correctAnswer.flat().length;
+          correctAnswer.forEach((row, i) => {
             row.forEach((num, j) => {
               if (studentAnswer.answer.answer[i] && studentAnswer.answer.answer[i][j] === num) {
                 correctCount++;
@@ -134,40 +143,50 @@ const calculateScore = (test, studentAnswers) => {
         break;
 
       case "variants":
-        if (JSON.stringify(studentAnswer.answer) === JSON.stringify(question.answer.correct)) {
+        if (JSON.stringify(studentAnswer.answer) === JSON.stringify(correctAnswer.correct)) {
           earnedPoints = maxPoints;
         }
         break;
-      case "list-reber": 
 
-
-        const correctEdges = question.answer; // например: [[1,2],[2,3]] или [{x1:1,x2:2},{x1:2,x2:3}]
+      case "list-reber":
+        const correctEdges = correctAnswer;
         const studentEdges = studentAnswer.answer.answer || [];
 
         let correctCount = 0;
         correctEdges.forEach(correctEdge => {
-          // Проверяем, есть ли совпадение среди ответов студента
-          const found = studentEdges.some(studentEdge =>
-            pairsEqual(correctEdge, studentEdge)
-          );
+          const found = studentEdges.some(studentEdge => pairsEqual(correctEdge, studentEdge));
           if (found) correctCount++;
         });
 
-        // Например, частичное количество баллов
         earnedPoints = (correctCount / correctEdges.length) * maxPoints;
         break;
 
+      case "list-pars":
+        const correctPairs = correctAnswer.pairs;
+        const studentPairs = studentAnswer.answer.answer || [];
+
+        let matchCount = 0;
+        correctPairs.forEach(pair => {
+          if (studentPairs.some(p => p[0] === pair[0] && p[1] === pair[1])) {
+            matchCount++;
+          }
+        });
+
+        earnedPoints = (matchCount / correctPairs.length) * maxPoints;
+        break;
 
       default:
-        console.warn(`⚠️ Неизвестный тип вопроса: ${question.type}`);
+        console.warn(`⚠️ Невідомий тип питання: ${question.type}`);
     }
 
+    console.log(`🏅 Нараховано балів: ${Math.round(earnedPoints)} з ${maxPoints}`);
     totalScore += Math.round(earnedPoints);
   });
 
-  console.log(`✅ Итоговый балл студента ${studentAnswers.student}: ${totalScore}`);
+  console.log(`✅ Підсумковий бал: ${totalScore}`);
   return totalScore;
 };
+
 
 
 // Функция безопасного чтения JSON
