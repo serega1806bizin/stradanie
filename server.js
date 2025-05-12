@@ -279,7 +279,7 @@ app.post('/submit', (req, res) => {
   answerData.timestamp = Date.now(); // Додаємо час створення відповіді
 
   const answers = readData(filePathAnswers);
-  answers.push(answerData);
+  answers.unshift(answerData);
   writeData(answers, filePathAnswers);
 
   // Обновляем прогресс в тесте
